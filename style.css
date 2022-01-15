@@ -37,6 +37,12 @@ body {
 
 #display #result {
     font-size: 30px;
+    height: 50%;
+}
+
+#display #value {
+    height: 50%;
+    padding-bottom: 5px;
 }
 
 #button-container {

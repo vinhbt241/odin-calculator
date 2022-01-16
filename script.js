@@ -13,8 +13,8 @@ const result = document.querySelector("#result");
 
 function initButtons() {
     const buttonLayout = [
-        "AC", "C", "%", "/",
-        "7", "8", "9", "*",
+        "AC", "C", "%", "÷",
+        "7", "8", "9", "×",
         "4", "5", "6", "-",
         "1", "2", "3", "+",
         ".", "0", "+/-", "=" 
@@ -43,9 +43,9 @@ function operate(operator, num1, num2) {
             return num1 + num2;
         case "-":
             return num1 - num2;
-        case "*":
+        case "×":
             return num1 * num2;
-        case "/":
+        case "÷":
             return num1 / num2;
         case "%":
             return num1 % num2;
@@ -54,25 +54,48 @@ function operate(operator, num1, num2) {
     }
 }
 
+function clearContent() {
+    displayValue = "0";
+    displayResult = "";
+    equation.operator = null;
+    equation.firstNum = null;
+    equation.secondNum = null;
+    value.textContent = displayValue;
+    result.textContent = displayResult;
+}
+
+function deleteContent() {
+    displayValue = displayValue.toString().slice(0, -1);
+    if (displayValue === "") {
+        displayValue = "0";
+    }
+    value.textContent = displayValue;
+}
+
+function toNumFit(num) {
+    return Math.round(num * 10e6) / 10e6;
+}
+
+function display(contentVal, contentRes) {
+    value.textContent = contentVal;
+    result.textContent = contentRes;
+}
+
 const buttons = document.querySelectorAll("#button-container button");
 
 buttons.forEach(button => {
     button.addEventListener("click", (e) => {
         let content = e.target.textContent;
         let isNumber = !isNaN(Number(content));
-        let isDot = (content === ".")
+        let isDot = (content === ".");
+        let isEquationFull = (equation.firstNum !== null
+                            && equation.operator !== null
+                            && equation.secondNum !== null);
 
         if (content === "AC") {
-            displayValue = "0";
-            displayResult = "";
-            equation.operator = null;
-            equation.firstNum = null;
-            equation.secondNum = null;
-            value.textContent = displayValue;
-            result.textContent = displayResult;
+            clearContent();
             return;
         }
-
         if (isNumber) {
             if(equation.firstNum !== null && equation.operator !== null && equation.secondNum === null) {
                 displayValue = "0";
@@ -84,47 +107,50 @@ buttons.forEach(button => {
                 displayValue = content;
             }
         } else if (isDot) {
-            if (displayValue.includes(content) === false) {
+            if (displayValue.toString().includes(content) === false) {
                 displayValue += content;
             }
         } else {
             if (content === "C") {
-                displayValue = displayValue.toString().slice(0, -1);
-                if (displayValue === "") {
-                    displayValue = "0";
-                }
-                value.textContent = displayValue;
+                deleteContent();
                 return
-            } else if (equation.firstNum !== null
-                && equation.operator !== null
-                && equation.secondNum !== null) {
-                    equation.secondNum = Math.round(Number(displayValue) * 10e6) / 10e6;
-                    if (equation.secondNum === 0 && equation.operator === "/") {
-                        alert("You can't divide a number with 0!");
-                        return;
-                    }
-                    if (content === "=") {
-                        displayValue = Math.round(operate(equation.operator, equation.firstNum, equation.secondNum) * 10e6) / 10e6;
-                        displayResult = `${equation.firstNum} ${equation.operator} ${equation.secondNum} =`;
-                        equation.firstNum = Math.round(operate(equation.operator, equation.firstNum, equation.secondNum) * 10e6) / 10e6;
-                        equation.operator = null;
-                        equation.secondNum = null;
-                    } else {
-                        equation.firstNum = Math.round(operate(equation.operator, equation.firstNum, equation.secondNum) * 10e6) / 10e6;
-                        equation.operator = content;
-                        equation.secondNum = null;
-                        displayValue = equation.firstNum;
-                        displayResult = `${equation.firstNum} ${equation.operator}`;
-                    }
-            } else {
-                if (equation.firstNum === null) {
-                    equation.firstNum = Math.round(Number(displayValue) * 10e6) / 10e6;
-                }
-                equation.operator = content;
-                displayResult = `${equation.firstNum} ${equation.operator}`;
             }
+            if (content === "+/-") {
+                displayValue = -toNumFit(Number(displayValue));
+                value.textContent = displayValue;
+                return;
+            }
+            if (isEquationFull) {
+                equation.secondNum = toNumFit(Number(displayValue));
+                if (equation.secondNum === 0 && equation.operator === "/") {
+                    alert("You can't divide a number with 0!");
+                    return;
+                }
+                if (content === "=") {
+                    displayValue = toNumFit(operate(equation.operator, equation.firstNum, equation.secondNum));
+                    displayResult = `${equation.firstNum} ${equation.operator} ${equation.secondNum} =`;
+                    equation.firstNum = toNumFit(operate(equation.operator, equation.firstNum, equation.secondNum));
+                    equation.operator = null;
+                    equation.secondNum = null;
+                    display(displayValue, displayResult);
+                    return;
+                } else {
+                    equation.firstNum = toNumFit(operate(equation.operator, equation.firstNum, equation.secondNum));
+                    equation.operator = content;
+                    equation.secondNum = null;
+                    displayValue = equation.firstNum;
+                    displayResult = `${equation.firstNum} ${equation.operator}`;
+                    display(displayValue, displayResult);
+                    return;
+                }
+            }
+            if (equation.firstNum === null) {
+                equation.firstNum = toNumFit(Number(displayValue));
+            }
+            equation.operator = content;
+            equation.firstNum = toNumFit(Number(displayValue));
+            displayResult = `${equation.firstNum} ${equation.operator}`;
         }
-        value.textContent = displayValue;
-        result.textContent = displayResult;
+        display(displayValue, displayResult);
     });
 })
